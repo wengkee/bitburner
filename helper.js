@@ -1,3 +1,5 @@
+const homeReservedMem = 50
+
 /** @param {NS} ns */
 export function formatNum(n) {
 	const options = { 
@@ -23,20 +25,28 @@ export function formatTime(d) {
 }
 
 export function getAllServers(ns){
-	return ns.read("other-servers.txt").split("\n")
+	return getAllOtherServers(ns).concat(getAllInternalServers(ns))
+}
+
+export function getAllOtherServers(ns){
+	let servers = ns.read("other-servers.txt").split("\n")
+	if(servers.length == 0 || servers[1] == "") servers =  []
+	return servers
 }
 
 export function getAllInternalServers(ns){
-	return ns.read("internal-servers.txt").split("\n")
+	let servers = ns.read("internal-servers.txt").split("\n")
+	if(servers.length == 0 || servers[1] == "") servers =  []
+	return servers
 }
 
 export function getAllServersAvailableMem(ns){
 	let totalFreeRam = 0
 	let servers = getAllServers(ns)
-	servers = servers.concat(getAllInternalServers(ns))
 	for(let server of servers){
+		if(server === "") continue
 		let availableRam = Math.floor(ns.getServerMaxRam(server) - ns.getServerUsedRam(server))
-		if(server === "home") availableRam -= 50
+		if(server === "home") availableRam -= homeReservedMem
 		totalFreeRam += availableRam
 	}
 	return totalFreeRam
@@ -45,18 +55,19 @@ export function getAllServersAvailableMem(ns){
 export function getAllServerMaxMem(ns){
 	let totalMaxRam = 0
 	let servers = getAllServers(ns)
-	servers = servers.concat(getAllInternalServers(ns))
 	for(let server of servers){
+		if(server === "") continue
 		let maxRam = ns.getServerMaxRam(server)
-		if(server === "home") maxRam -= 20
+		if(server === "home") maxRam -= homeReservedMem
 		totalMaxRam += maxRam
 	}
 	return totalMaxRam
 }
 
 export function getAvailableMem(ns, server){
+	if(server === "") return 0
 	let mem = ns.getServerMaxRam(server) - ns.getServerUsedRam(server)
-	if(server === "home") mem -= 20
+	if(server === "home") mem -= homeReservedMem
 	return mem
 }
 
@@ -65,6 +76,7 @@ export function getAvailableMemOfServers(ns, servers){
 	let totalMem = 0
 	for( let server of servers){
 		totalMem += getAvailableMem(ns, server)
+		if(server === "home") totalMem -= homeReservedMem
 	}
 
 	return totalMem
@@ -74,7 +86,9 @@ export function getMaxMemOfServers(ns, servers){
 
 	let totalMem = 0
 	for( let server of servers){
+		if(server === "") continue
 		totalMem += ns.getServerMaxRam(server)
+		if(server === "home") totalMem -= homeReservedMem
 	}
 
 	return totalMem

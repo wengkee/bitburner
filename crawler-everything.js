@@ -8,8 +8,6 @@ export async function main(ns) {
 
 async function prep(ns, target) {
 
-    // ns.tprint(scripts + " copied to " + target)
-
     if (ns.hasRootAccess(target)) return true;
     
     function can(action) {
@@ -30,9 +28,7 @@ async function prep(ns, target) {
 
 async function crawl(ns) {
 
-    const sf = "other-servers.txt" // other servers that are already rooted
-    const cf = "internal-servers.txt" // purchased servers, named after 'castle-black'
-    const scripts = ["grow-v3.js", "hack-v3.js", "weaken-v3.js"]
+    const sf = "all-servers.txt" 
 
     let hosts = ["home"]
     let seen = []
@@ -43,12 +39,6 @@ async function crawl(ns) {
         if (rooted.length == 1 && rooted[0] === "") rooted = [];
     }
 
-    let internal = []
-    if(ns.fileExists(cf)){
-        internal = ns.read(cf).split("\n");
-        if (internal.length == 1 && internal[0] === "") internal = [];
-    }
-
     while (hosts.length > 0) {
         let h = hosts.shift();
 
@@ -57,22 +47,12 @@ async function crawl(ns) {
         seen.push(h);
 
         await prep(ns, h)
-        await ns.scp(scripts, h)
 
-        if(h.startsWith("castle-black")){
-            if(internal.indexOf(h) == -1){
-                internal.push(h)
-            } 
-        } else {
-            if (ns.hasRootAccess(h) && rooted.indexOf(h) == -1) {
-                rooted.push(h);
-            }
-        }
+        if (rooted.indexOf(h) == -1) rooted.push(h)
         
         hosts = hosts.concat(ns.scan(h))
     }
     
     await ns.write(sf, rooted.join("\n"), "w")
-    await ns.write(cf, internal.join("\n"), "w")
 
 }
